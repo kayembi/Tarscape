@@ -122,7 +122,7 @@ All Tarscape methods are documented using Swift documentation comments. Opt-clic
 
 ## Why Tarscape?
 
-We needed a fast way of archiving file packages (i.e. folders) to a single file format for syncing, preferably written in Swift. There exist several great open source Tar projects for Swift and Objective-C (see [#References](References) below). However, none of them quite suited our requirements:
+We needed a fast way of archiving file packages (i.e. folders) to a single file format for syncing, preferably written in Swift. There exist several great open source Tar projects for Swift and Objective-C (see [References](#References) below). However, none of them quite suited our requirements:
 
 - SWCompression is written in Swift but is designed to work on in-memory data only - it doesn't work directly with a folder of files on disk. Loading files into memory prior to archiving added too much time for our needs.
 - Light Untar and Light Swift Untar work well for extracting files but do not support creating Tar archives.
