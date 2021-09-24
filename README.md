@@ -3,7 +3,7 @@
 
 ## About
 
-Tarscape is a Swift framework for reading and writing Tar archives.
+Tarscape is a Swift package for reading and writing Tar archives.
 
 
 ## Usage
@@ -37,7 +37,8 @@ You can increase or decrease archiving and extraction times by using `KBTarArchi
 For example, turning `supportsAliasFiles` can slightly improve archiving speeds:
 
 ```swift
-// If we know our folder doesn't contain aliases, we can tell the archiver not to check for them.
+// If we know our folder doesn't contain aliases, we can tell 
+the archiver not to check for them.
 let tarArchiver = KBTarArchiver(directoryURL: dirURL, supportsAliasFiles: false)
 try tarArchiver.archive(to: tarURL) { progress in
     // Update progress here (0.0...1.0)
@@ -48,9 +49,20 @@ You can also set some options to speed up unarchiving:
 
 ```swift
 let tarUnarchiver = KBTarUnarchiver(tarURL: tarURL)
-// 1. File attributes such as permissions and modification dates have to be set using FileManager's setAttributes(_:ofItemAtPath:) and this is *slow*. If you don't care about such attributes being restored and can live with default attributes being applied to extracted files, telling the unarchiver not to restore file attributes can significantly improve extraction speeds.
+// 1. File attributes such as permissions and modification dates 
+//    have to be set using FileManager's setAttributes(_:ofItemAtPath:) 
+//    and this is *slow*. If you don't care about such attributes being 
+//    restored and can live with default attributes being applied to 
+//    extracted files, telling the unarchiver not to restore file attributes
+//    can significantly improve extraction speeds.
 tarUnarchiver.restoresFileAttributes = false
-// 2. Constructing file URLs can be done much faster if we don't have to worry about special characters and spaces etc that have to be escaped. If you know that most subpaths in the archive don't use special characters or spaces, you can speed up unarchiving by telling the unarchiver as much. Only set this flag if you're sure, though - unarchiving can be slower if you set this flag but it turns out that a lot of subpaths contain spaces or special characters.
+// 2. Constructing file URLs can be done much faster if we don't have to 
+//    worry about special characters and spaces etc that have to be escaped.
+//    If you know that most subpaths in the archive don't use special characters
+//    or spaces, you can speed up unarchiving by telling the unarchiver as much.
+//    Only set this flag if you're sure, though - unarchiving can be slower if
+//    you set this flag but it turns out that a lot of subpaths contain spaces
+//    or special characters.
 tarUnarchiver.mostSubpathsCanBeUnescaped = true
 try tarUnarchiver.extract(to: dirURL) { progress in
     // Update progress here (0.0...1.0)
