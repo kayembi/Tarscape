@@ -38,7 +38,7 @@ For example, turning `supportsAliasFiles` can slightly improve archiving speeds:
 
 ```swift
 // If we know our folder doesn't contain aliases, we can tell 
-the archiver not to check for them.
+// the archiver not to check for them.
 let tarArchiver = KBTarArchiver(directoryURL: dirURL, supportsAliasFiles: false)
 try tarArchiver.archive(to: tarURL) { progress in
     // Update progress here (0.0...1.0)
@@ -95,17 +95,22 @@ Note that every time you call `entry(atSubpath:)`, Tarscape has to parse through
 ```swift
 let tarUnarchiver = KBTarUnarchiver(tarURL: tarURL)
 
-// Tell the unarchiver to gather a list of entries. By passing in the "lazily" flag, we tell the unarchiver not to load any data into memory but only the list of entries. The data for each entry will not be read into memory until we call regularFileContents() on a specific entry.
+// Tell the unarchiver to gather a list of entries. By passing in the "lazily" 
+// flag, we tell the unarchiver not to load any data into memory but only the 
+// list of entries. The data for each entry will not be read into memory until 
+// we call regularFileContents() on a specific entry.
 try tarUnarchiver.loadAllEntries(lazily: true)
 
-// Enumerate through root entries (note that rootEntries is nil until loadAllEntries() is called):
+// Enumerate through root entries (note that rootEntries is nil until 
+// loadAllEntries() is called):
 for entry in tarUnarchiver.rootEntries {
     // do something...
 }
 
 // Find an entry using subscript syntax:
 let fileEntry = tarUnarchiver["path/to/file.txt"]
-// Load the data for the entry - if set "lazily" to "true", only now does the data get read from the archive:
+// Load the data for the entry - if set "lazily" to "true", only now does 
+// the data get read from the archive:
 let data = fileEntry.regularFileContents()
 
 ```
