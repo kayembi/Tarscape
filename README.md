@@ -72,7 +72,7 @@ try tarUnarchiver.extract(to: dirURL) { progress in
 
 ### Accessing Individual Archive Entries
 
-If you don't want to extract the entire Tar file but just find a certain file or files within it, you can query it using KBTarEntry.
+If you don't want to extract the entire Tar file but just find a certain file or files within it, you can query it using `KBTarEntry`.
 
 Example:
 
@@ -90,7 +90,7 @@ for childEntry in folderEntry.descendants {
 }
 ```
 
-Note that every time you call `entry(atSubpath:)`, Tarscape has to parse through the entire Tar file until it finds the entry. If you need to look for more than one entry, therefore, you should tell the unarchiver to parse the Tar file to build up a list of entries:
+Note that every time you call `entry(atSubpath:)`, Tarscape has to parse through the entire Tar file until it finds the entry. If you need to look for more than one entry, therefore, you should tell the unarchiver to parse the Tar file first to build up a list of entries:
 
 ```swift
 let tarUnarchiver = KBTarUnarchiver(tarURL: tarURL)
@@ -109,7 +109,7 @@ for entry in tarUnarchiver.rootEntries {
 
 // Find an entry using subscript syntax:
 let fileEntry = tarUnarchiver["path/to/file.txt"]
-// Load the data for the entry - if set "lazily" to "true", only now does 
+// Load the data for the entry - if "lazily" was set to "true", only now does 
 // the data get read from the archive:
 let data = fileEntry.regularFileContents()
 
@@ -122,17 +122,17 @@ All Tarscape methods are documented using Swift documentation comments. Opt-clic
 
 ## Why Tarscape?
 
-We needed a fast way of archiving file packages (i.e. folders) to a single file format for syncing, preferably written in Swift. There exist several great open source Tar projects for Swift and Objective-C (see [References](References) below). However, none of them quite suited our requirements:
+We needed a fast way of archiving file packages (i.e. folders) to a single file format for syncing, preferably written in Swift. There exist several great open source Tar projects for Swift and Objective-C (see [#References](References) below). However, none of them quite suited our requirements:
 
 - SWCompression is written in Swift but is designed to work on in-memory data only - it doesn't work directly with a folder of files on disk. Loading files into memory prior to archiving added too much time for our needs.
 - Light Untar and Light Swift Untar work well for extracting files but do not support creating Tar archives.
 - Tarkit (DCTar) works well but is written in Objective-C and hasn't been updated for several years.
-- We needed archiving, especially, to be fast. This required dropping down to using stat() instead of using FileManager's attributesOfItem(atPath:), bypassing String when generating octals, and several other optimisations. (Suggestions for further optimisation would be greatly appreciated.)
+- We needed archiving, especially, to be fast. This required dropping down to using `stat()` instead of using FileManager's `attributesOfItem(atPath:)`, bypassing `String` when generating octals, and several other optimisations. (Suggestions for further optimisation would be greatly appreciated.)
 
 
 ## References
 
-Tarscape builds on on and uses code from the following projects:
+Tarscape builds on and uses code from the following projects:
 
 - [SW Compression](https://github.com/tsolomko/SWCompression) by Timofey Solomko (c) 2021.
 - [tarkit/DCTar](https://github.com/daltoniam/tarkit) by Dalton Cherry (c) 2014.
