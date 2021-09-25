@@ -6,6 +6,12 @@
 Tarscape is a Swift package for reading and writing Tar archives on macOS and iOS.
 
 
+## Installation
+
+The easiest way of installing Tarscape is to search for `https://github.com/kayembi/Tarscape.git` in Xcode's package manager. Alternatively, download and drag the Tarscape package folder to your Xcode project.
+
+Remember to add `import Tarscape` at the top of Swift files that use Tarscape.
+
 ## Usage
 
 ### Basic Usage
