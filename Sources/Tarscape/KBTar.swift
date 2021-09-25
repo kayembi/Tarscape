@@ -185,9 +185,11 @@ internal struct KBTar {
             return info
         }
         
+        /*
         private static let isoDateFormatter: ISO8601DateFormatter = {
             return ISO8601DateFormatter()
         }()
+         */
     }
     
     enum TarType: String {
