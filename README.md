@@ -12,6 +12,7 @@ The easiest way of installing Tarscape is to search for `https://github.com/kaye
 
 Remember to add `import Tarscape` at the top of Swift files that use Tarscape.
 
+
 ## Usage
 
 ### Basic Usage
