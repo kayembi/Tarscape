@@ -16,6 +16,7 @@ public enum KBTarError: LocalizedError {
     case fileNotFound
     case invalidNumber
     case couldNotCreateExtendedHeader
+    case couldNotCreateSymbolicLink
     
     public var errorDescription: String? {
         switch self {
@@ -33,6 +34,8 @@ public enum KBTarError: LocalizedError {
             return KBTarLocalize.string("Could not decode number.")
         case .couldNotCreateExtendedHeader:
             return KBTarLocalize.string("Could not create extended header.")
+        case .couldNotCreateSymbolicLink:
+            return KBTarLocalize.string("Could not create symbolic link.")
         }
     }
     

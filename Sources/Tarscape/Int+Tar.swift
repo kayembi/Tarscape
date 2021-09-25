@@ -7,7 +7,7 @@
 
 import Foundation
 
-extension Int {
+internal extension Int {
     
     // Get the maximum number that can be stored by an octal of the given length.
     // The largest number that can be stored with twelve digits, for instance, is
@@ -17,19 +17,13 @@ extension Int {
     // eight gigabytes. Here's an easy way to get the max value:
     // let str = String(repeating: "7", count: length-1)
     // let maxOctalValue = Int(str, radix: 8)!
-    // The below is faster, though (from SWCompression and TarKit). This is based on
+    // The below is faster, though (from SWCompression and tarkit). This is based on
     // how an octal number represents three binary digits. (E.g. (1 << 10)-1 would give us
     // 1023, or 1111111111 in binary - the biggest 10-digit binary number. This works because
-    // if we bit shift 1 left 10 places, be get binary 10000000000 (an eleven-digit number),
+    // if we bit shift 1 left 10 places, be get binary 10000000000 - an eleven-digit number -
     // and then subtract one to get the highest ten-digit number. One octal digit represents
     // three binary digits, so we multiply the length by three before bit shifting to get
     // the maximum octal number of the given number of digits.)
-    // let maxOctalValue = (1 << (length * 3)) - 1
-    /*
-    init(maxOctalValueOfLength length: Int) {
-        self = (1 << (length * 3)) - 1
-    }
-    */
     // NOTE: Subtract 1 from the length here. The maximum length that can be stored is
     // length - 1 because there must be at least one space or null character after it.
     init(tarMaxOctalValueForFieldLength length: Int) {

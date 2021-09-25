@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct KBTar {
+internal struct KBTar {
     
     static let blockSize = 512
     

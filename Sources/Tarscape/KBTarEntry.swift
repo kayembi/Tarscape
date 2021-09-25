@@ -11,6 +11,12 @@ import Foundation
 // when storing this in a dictionary.
 public class KBTarEntry {
     
+    public enum EntryType: Int {
+        case file = 0
+        case directory = 1
+        case symbolicLink = 2
+    }
+    
     public var name = ""
     public var subpath = ""
     public var entryType = EntryType.file
@@ -23,7 +29,9 @@ public class KBTarEntry {
     public var children: [KBTarEntry] = [] // Directories only.
     private var childrenByName: [String: KBTarEntry] = [:] // Directories only. Key is the child's name.
     
-    init(fileWithSubpath subpath: String, regularFileContents: Data, modificationDate: Date?, fileSize: Int) {
+    // MARK: - Initialisers
+    
+    internal init(fileWithSubpath subpath: String, regularFileContents: Data, modificationDate: Date?, fileSize: Int) {
         self.name = Self.nameForSubpath(subpath)
         self.subpath = Self.cleanedSubpath(subpath)
         self._realRegularFileContents = regularFileContents
@@ -32,21 +40,21 @@ public class KBTarEntry {
         self.entryType = .file
     }
     
-    init(symbolicLinkWithSubpath subpath: String, destination: URL?) {
+    internal init(symbolicLinkWithSubpath subpath: String, destination: URL?) {
         self.name = Self.nameForSubpath(subpath)
         self.subpath = Self.cleanedSubpath(subpath)
         self.symbolicLinkDestinationURL = destination
         self.entryType = .symbolicLink
     }
     
-    init(directoryWithSubpath subpath: String, modificationDate: Date?) {
+    internal init(directoryWithSubpath subpath: String, modificationDate: Date?) {
         self.name = Self.nameForSubpath(subpath)
         self.subpath = Self.cleanedSubpath(subpath)
         self.modificationDate = modificationDate
         self.entryType = .directory
     }
     
-    init(lazyFileWithSubpath subpath: String, tarURL: URL, location: UInt64, modificationDate: Date?, fileSize: Int) {
+    internal init(lazyFileWithSubpath subpath: String, tarURL: URL, location: UInt64, modificationDate: Date?, fileSize: Int) {
         self.name = Self.nameForSubpath(subpath)
         self.subpath = Self.cleanedSubpath(subpath)
         self.tarURL = tarURL
@@ -56,17 +64,48 @@ public class KBTarEntry {
         self.entryType = .file
     }
     
-    public func addChild(_ childEntry: KBTarEntry) {
+    internal func addChild(_ childEntry: KBTarEntry) {
         if entryType == .directory {
             children.append(childEntry)
-            childrenByName[childEntry.name] = childEntry
+            childrenByName[childEntry.name.lowercased()] = childEntry
         }
     }
     
+    // MARK: - Public Methods
+    
+    /// Returns the child with the passed-in name.
+    ///
+    /// The name check is case-insensitive.
     public func child(forName name: String) -> KBTarEntry? {
-        return childrenByName[name]
+        return childrenByName[name.lowercased()]
     }
     
+    /// Returns the descedant at the given subpath.
+    ///
+    /// Note that the subpath should be relative to the entry, not to the Tar archive as a whole.
+    public func descendant(atSubpath subpath: String) -> KBTarEntry? {
+        let subpath = Self.cleanedSubpath(subpath)
+        let components = subpath.components(separatedBy: "/")
+        var parent = self
+        var entry: KBTarEntry?
+        for name in components {
+            entry = parent.child(forName: name)
+            if entry == nil {
+                return nil
+            }
+            parent = entry!
+        }
+        return entry
+    }
+    
+    /// Subscript version of `descendant(atSubpath:)`.
+    public subscript(subpath: String) -> KBTarEntry? {
+        return descendant(atSubpath: subpath)
+    }
+    
+    /// Returns an array of all `KBTarEntry` descendants of the entry.
+    ///
+    /// The array will always be empty for non-directory entries.
     public var descendants: [KBTarEntry] {
         var descendants: [KBTarEntry] = []
         for child in children {
@@ -78,6 +117,9 @@ public class KBTarEntry {
         return descendants
     }
     
+    /// Returns the data for .file entries.
+    ///
+    /// If the entry was loaded lazily, this methods reads the data from the Tar archive before returning it.
     public func regularFileContents() -> Data? {
         if let _realRegularFileContents = _realRegularFileContents {
             return _realRegularFileContents
@@ -102,11 +144,40 @@ public class KBTarEntry {
         return nil
     }
     
-    public enum EntryType: Int {
-        case file = 0
-        case directory = 1
-        case symbolicLink = 2
+    /// Writes the file or directory to disk.
+    ///
+    /// For directory entries, all descendants are also written to disk.
+    public func write(to url: URL, atomically: Bool = false) throws {
+        switch self.entryType {
+            
+        case .file:
+            try regularFileContents()?.write(to: url, options: atomically ? .atomic : [])
+            if let modificationDate = modificationDate {
+                try FileManager.default.setAttributes([.modificationDate: modificationDate], ofItemAtPath: url.path)
+            }
+            
+        case .symbolicLink:
+            if let symbolicLinkDestinationURL = symbolicLinkDestinationURL {
+                try FileManager.default.createSymbolicLink(at: url, withDestinationURL: symbolicLinkDestinationURL)
+            } else {
+                throw KBTarError.couldNotCreateSymbolicLink
+            }
+            
+        case .directory:
+            var attrs: [FileAttributeKey: Any]?
+            if let modificationDate = modificationDate {
+                attrs = [.modificationDate: modificationDate]
+            }
+            try FileManager.default.createDirectory(at: url, withIntermediateDirectories: false, attributes: attrs)
+            // Create all descendants recursively.
+            for child in children {
+                let childURL = url.appendingPathComponent(child.name)
+                try child.write(to: childURL, atomically: atomically)
+            }
+        }
     }
+    
+    // Private Methods
     
     private static func nameForSubpath(_ subpath: String) -> String {
         return URL(fileURLWithPath: subpath).lastPathComponent

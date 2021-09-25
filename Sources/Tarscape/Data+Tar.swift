@@ -9,7 +9,7 @@
 
 import Foundation
 
-extension Data {
+internal extension Data {
     
     /// Appends the string as data, either truncated or padded with zeroed bytes to match
     /// the passed-in `length`.

@@ -3,7 +3,7 @@
 
 ## About
 
-Tarscape is a Swift package for reading and writing Tar archives.
+Tarscape is a Swift package for reading and writing Tar archives on macOS and iOS.
 
 
 ## Usage
@@ -25,7 +25,7 @@ To extract a Tar archive:
 ```swift
 // let tarURL = <location of the Tar file>
 // let dirURL = <location at which the extracted directory should be created>
-try FileManager.default(extractTar: tarURL, to: dirURL)
+try FileManager.default.extractTar(at: tarURL, to: dirURL)
 ```
 
 The FileManager methods can also be called from Objective-C code.
@@ -118,6 +118,10 @@ let data = fileEntry.regularFileContents()
 ### Documentation
 
 All Tarscape methods are documented using Swift documentation comments. Opt-click a method name in Xcode for Quick Help.
+
+### Limitations
+
+Note that because Tarscape focuses on fast Tar creation and extraction, it does not support compression (it reads and writes .tar files, not tar.gz files). To add support for tar.gz, you'll need a third-party compression library such as [DataCompression](https://github.com/mw99/DataCompression).
 
 
 ## Why Tarscape?

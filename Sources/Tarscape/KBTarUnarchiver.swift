@@ -54,7 +54,7 @@ public class KBTarUnarchiver {
     /// Set to `0` to turn off chunking.
     public var maxBlockLoadInMemory = 10240
     
-    // - MARK: Public Methods
+    // MARK: - Public Methods
     
     /// Creates an unarchiver object ready for extracting the Tar file at the passed-in location.
     /// - Parameter tarURL: The path of the Tar file to extract.
