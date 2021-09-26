@@ -26,9 +26,9 @@ public class KBTarUnarchiver {
         /// and applied to extracted files. If not set, file attributes for each extracted file will just use the
         /// defaults (such as today's date).
         ///
-        /// Setting `.restoresFileAttributes` can significantly increase extraction time, because
+        /// Setting `.restoreFileAttributes` can significantly increase extraction time, because
         /// it has to use `FileManager`'s `setAttributes(_ofItemAtPath:)`, which is *slow*.
-        public static let restoresFileAttributes = Options(rawValue: 1 << 0)
+        public static let restoreFileAttributes = Options(rawValue: 1 << 0)
         
         /// If set, a method for working out file URLs is used that is faster for paths containing no spaces
         /// or special characters.
@@ -68,8 +68,8 @@ public class KBTarUnarchiver {
     
     /// Creates an unarchiver object ready for extracting the Tar file at the passed-in location.
     /// - Parameter tarURL: The path of the Tar file to extract.
-    /// - Parameter options: Options for extracting the data. The default value is `[.restoresFileAttributes]`.
-    public init(tarURL: URL, options: Options = [.restoresFileAttributes]) {
+    /// - Parameter options: Options for extracting the data. The default value is `[.restoreFileAttributes]`.
+    public init(tarURL: URL, options: Options = [.restoreFileAttributes]) {
         self.tarURL = tarURL
         self.options = options
     }
@@ -101,7 +101,7 @@ public class KBTarUnarchiver {
                     }
                     // Set file attributes.
                     // NOTE: This is *slow*, so it's optional.
-                    if options.contains(.restoresFileAttributes) {
+                    if options.contains(.restoreFileAttributes) {
                         let attrs = attributes(at: location)
                         if attrs.isEmpty == false {
                             try? fm.setAttributes(attrs, ofItemAtPath: fileURL.path)
@@ -111,7 +111,7 @@ public class KBTarUnarchiver {
                 case .directory:
                     let directoryURL = fileURL(forDirectoryURL: dirURL, directoryAbsoluteString: dirAbsPath, subpath: subpath)
                     try fm.createDirectory(at: directoryURL, withIntermediateDirectories: true, attributes: nil)
-                    if options.contains(.restoresFileAttributes) {
+                    if options.contains(.restoreFileAttributes) {
                         let attrs = attributes(at: location)
                         if attrs.isEmpty == false {
                             try? fm.setAttributes(attrs, ofItemAtPath: directoryURL.path)

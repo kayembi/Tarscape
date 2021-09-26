@@ -8,7 +8,7 @@ Tarscape is a Swift package for reading and writing Tar archives on macOS and iO
 
 ## Installation
 
-The easiest way of installing Tarscape is to search for `https://github.com/kayembi/Tarscape.git` in Xcode's package manager. Alternatively, download and drag the Tarscape package folder to your Xcode project.
+Search for `https://github.com/kayembi/Tarscape.git` in Xcode's package manager. Alternatively, download and drag the Tarscape package folder to your Xcode project.
 
 Remember to add `import Tarscape` at the top of Swift files that use Tarscape.
 
@@ -41,12 +41,12 @@ The FileManager methods can also be called from Objective-C code.
 
 You can increase or decrease archiving and extraction times by using `KBTarArchiver` and `KBTarUnarchiver` and changing certain options.
 
-For example, turning `supportsAliasFiles` can slightly improve archiving speeds:
+For example, setting `.convertAliasFiles` ensures alias files get stored in the archive correctly, but will slow down the archiving process.
 
 ```swift
-// If we know our folder doesn't contain aliases, we can tell 
-// the archiver not to check for them.
-let tarArchiver = KBTarArchiver(directoryURL: dirURL, supportsAliasFiles: false)
+// If the folder contains or might contain aliases, we should tell 
+// the archiver to convert them to symbolic links.
+let tarArchiver = KBTarArchiver(directoryURL: dirURL, options: .convertAliasFiles)
 try tarArchiver.archive(to: tarURL) { progress in
     // Update progress here (0.0...1.0)
 }
@@ -55,14 +55,13 @@ try tarArchiver.archive(to: tarURL) { progress in
 You can also set some options to speed up unarchiving:
 
 ```swift
-let tarUnarchiver = KBTarUnarchiver(tarURL: tarURL)
 // 1. File attributes such as permissions and modification dates 
 //    have to be set using FileManager's setAttributes(_:ofItemAtPath:) 
 //    and this is *slow*. If you don't care about such attributes being 
 //    restored and can live with default attributes being applied to 
 //    extracted files, telling the unarchiver not to restore file attributes
-//    can significantly improve extraction speeds.
-tarUnarchiver.restoresFileAttributes = false
+//    can significantly improve extraction speeds. Do this by setting the
+//    options parameter and *not* including .restoreFileAttributes.
 // 2. Constructing file URLs can be done much faster if we don't have to 
 //    worry about special characters and spaces etc that have to be escaped.
 //    If you know that most subpaths in the archive don't use special characters
@@ -70,7 +69,7 @@ tarUnarchiver.restoresFileAttributes = false
 //    Only set this flag if you're sure, though - unarchiving can be slower if
 //    you set this flag but it turns out that a lot of subpaths contain spaces
 //    or special characters.
-tarUnarchiver.mostSubpathsCanBeUnescaped = true
+let tarUnarchiver = KBTarUnarchiver(tarURL: tarURL, options: [.mostSubpathsCanBeUnescaped])
 try tarUnarchiver.extract(to: dirURL) { progress in
     // Update progress here (0.0...1.0)
 }

@@ -25,7 +25,7 @@ public class KBTarArchiver {
         /// If set, archiving checks for aliases and stores them as symbolic links in the archive. (The Tar format
         /// doesn't support alias files by default, only symbolic links.) Checking for alias files takes extra time
         /// and so slows the archiving process.
-        public static let supportsAliasFiles = Options(rawValue: 1 << 0)
+        public static let convertAliasFiles = Options(rawValue: 1 << 0)
         
         public init(rawValue: Int) {
             self.rawValue = rawValue
@@ -121,7 +121,7 @@ public class KBTarArchiver {
     
     private func encodeBinaryData(for fileURL: URL, subpath: String) throws {
         
-        let fileAttributes = KBFileAttributes(fileURL: fileURL, supportAliasFiles: options.contains(.supportsAliasFiles))
+        let fileAttributes = KBFileAttributes(fileURL: fileURL, supportAliasFiles: options.contains(.convertAliasFiles))
         
         // Get the Tar type (directory, symbolic link or regular file).
         //let tarType = KBTar.TarType(resourceValues: resourceValues)
@@ -179,7 +179,7 @@ public class KBTarArchiver {
             if tarType == .symbolicLink,
                let fileURL = fileURL {
                 // Ty to get the destination file.
-                if options.contains(.supportsAliasFiles) && fileAttributes?.fileType == .alias {
+                if options.contains(.convertAliasFiles) && fileAttributes?.fileType == .alias {
                     // Aliases are slighlty different from symbolic links.
                     linkName = try? URL(resolvingAliasFileAt: fileURL, options: [.withoutUI, .withoutMounting]).path
                 } else {
