@@ -14,8 +14,23 @@ import Foundation
 public class KBTarArchiver {
     
     private let directoryURL: URL
-    public let supportsAliasFiles: Bool
+    private let options: Options
     private var fileHandle: FileHandle!
+    
+    // MARK: - Options
+    
+    public struct Options: OptionSet {
+        public let rawValue: Int
+
+        /// If set, archiving checks for aliases and stores them as symbolic links in the archive. (The Tar format
+        /// doesn't support alias files by default, only symbolic links.) Checking for alias files takes extra time
+        /// and so slows the archiving process.
+        public static let supportsAliasFiles = Options(rawValue: 1 << 0)
+        
+        public init(rawValue: Int) {
+            self.rawValue = rawValue
+        }
+    }
     
     // MARK: - Public Methods
     
@@ -30,12 +45,10 @@ public class KBTarArchiver {
     
     /// Creates a new archiver object ready to generate a Tar file from the passed-in directory contents.
     /// - Parameter directoryURL: The path to the directory for archiving.
-    /// - Parameter supportsAliasFiles: If `true`, checks for aliases and stores them as symbolic links
-    ///     in the archive. The Tar format doesn't support alias files by default, only symbolic links. Checking for alias
-    ///     files is slower, so this option is `false` by default.
-    public init(directoryURL: URL, supportsAliasFiles: Bool = false) {
+    /// - Parameter options: Options for creating the archive. The default value is `[]`.
+    public init(directoryURL: URL, options: Options = []) {
         self.directoryURL = directoryURL
-        self.supportsAliasFiles = supportsAliasFiles
+        self.options = options
     }
     
     /// Creates a Tar file at `tarURL`.
@@ -108,7 +121,7 @@ public class KBTarArchiver {
     
     private func encodeBinaryData(for fileURL: URL, subpath: String) throws {
         
-        let fileAttributes = KBFileAttributes(fileURL: fileURL, supportAliasFiles: supportsAliasFiles)
+        let fileAttributes = KBFileAttributes(fileURL: fileURL, supportAliasFiles: options.contains(.supportsAliasFiles))
         
         // Get the Tar type (directory, symbolic link or regular file).
         //let tarType = KBTar.TarType(resourceValues: resourceValues)
@@ -166,7 +179,7 @@ public class KBTarArchiver {
             if tarType == .symbolicLink,
                let fileURL = fileURL {
                 // Ty to get the destination file.
-                if supportsAliasFiles && fileAttributes?.fileType == .alias {
+                if options.contains(.supportsAliasFiles) && fileAttributes?.fileType == .alias {
                     // Aliases are slighlty different from symbolic links.
                     linkName = try? URL(resolvingAliasFileAt: fileURL, options: [.withoutUI, .withoutMounting]).path
                 } else {

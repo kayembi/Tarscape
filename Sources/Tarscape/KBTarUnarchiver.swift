@@ -14,26 +14,38 @@ import Foundation
 public class KBTarUnarchiver {
     
     private let tarURL: URL
+    private let options: Options
     private var fileHandle: FileHandle!
     
-    /// If set to `true`, file attributes such as modification dates and permissions will
-    /// be read from the archive and applied to extracted files. If set to `false`, file attributes
-    /// for each extracted file will just use the defaults (such as today's date).
-    ///
-    /// Setting `restoresFileAttributes` to `true` can significantly increase
-    /// extraction time, because it has to use `FileManager`'s `setAttributes(_ofItemAtPath:)`,
-    /// which is *slow*.
-    public var restoresFileAttributes = true
+    // MARK: - Options
     
-    /// If set to `true`, a method for working out file URLs is used that is faster for paths
-    /// containing no spaces or special characters.
-    ///
-    /// Setting this to `true` will improve extraction speeds for archives whose entries all use
-    /// simple file paths - paths containing no spaces or special characters that would need
-    /// escaping in a URL. However, if many entries contain characters that need escaping in a URL,
-    /// setting this to `true` will *slow* extraction. Only set to `true` when you know the
-    /// Tar archive contains only simple file paths.
-    public var mostSubpathsCanBeUnescaped = false
+    public struct Options: OptionSet {
+        public let rawValue: Int
+
+        /// If set, file attributes such as modification dates and permissions will be read from the archive
+        /// and applied to extracted files. If not set, file attributes for each extracted file will just use the
+        /// defaults (such as today's date).
+        ///
+        /// Setting `.restoresFileAttributes` can significantly increase extraction time, because
+        /// it has to use `FileManager`'s `setAttributes(_ofItemAtPath:)`, which is *slow*.
+        public static let restoresFileAttributes = Options(rawValue: 1 << 0)
+        
+        /// If set, a method for working out file URLs is used that is faster for paths containing no spaces
+        /// or special characters.
+        ///
+        /// Setting `.mostSubpathsCanBeUnescaped` will improve extraction speeds for archives
+        /// whose entries all use simple file paths - paths containing no spaces or special characters that
+        /// would need escaping in a URL. However, if many entries contain characters that need escaping
+        /// in a URL,setting this option will *slow* extraction. Only use this option when you know the Tar
+        /// archive contains only simple file paths.
+        public static let mostSubpathsCanBeUnescaped = Options(rawValue: 1 << 1)
+        
+        public init(rawValue: Int) {
+            self.rawValue = rawValue
+        }
+    }
+    
+    // MARK: - Public Methods
     
     // NOTE: TarKit and Light-Untar both use 100 here.
     // This is multiplied by blockSize to calculate the size of the
@@ -54,12 +66,12 @@ public class KBTarUnarchiver {
     /// Set to `0` to turn off chunking.
     public var maxBlockLoadInMemory = 10240
     
-    // MARK: - Public Methods
-    
     /// Creates an unarchiver object ready for extracting the Tar file at the passed-in location.
     /// - Parameter tarURL: The path of the Tar file to extract.
-    public init(tarURL: URL) {
+    /// - Parameter options: Options for extracting the data. The default value is `[.restoresFileAttributes]`.
+    public init(tarURL: URL, options: Options = [.restoresFileAttributes]) {
         self.tarURL = tarURL
+        self.options = options
     }
     
     /// Extracts the tar at `tarURL` to `dirURL`.
@@ -89,7 +101,7 @@ public class KBTarUnarchiver {
                     }
                     // Set file attributes.
                     // NOTE: This is *slow*, so it's optional.
-                    if restoresFileAttributes {
+                    if options.contains(.restoresFileAttributes) {
                         let attrs = attributes(at: location)
                         if attrs.isEmpty == false {
                             try? fm.setAttributes(attrs, ofItemAtPath: fileURL.path)
@@ -99,7 +111,7 @@ public class KBTarUnarchiver {
                 case .directory:
                     let directoryURL = fileURL(forDirectoryURL: dirURL, directoryAbsoluteString: dirAbsPath, subpath: subpath)
                     try fm.createDirectory(at: directoryURL, withIntermediateDirectories: true, attributes: nil)
-                    if restoresFileAttributes {
+                    if options.contains(.restoresFileAttributes) {
                         let attrs = attributes(at: location)
                         if attrs.isEmpty == false {
                             try? fm.setAttributes(attrs, ofItemAtPath: directoryURL.path)
@@ -467,7 +479,7 @@ public class KBTarUnarchiver {
     // special option should only be used when we know that the archive doesn't contain
     // paths with special characters.
     private func fileURL(forDirectoryURL dirURL: URL, directoryAbsoluteString: String, subpath: String) -> URL {
-        if mostSubpathsCanBeUnescaped,
+        if options.contains(.mostSubpathsCanBeUnescaped),
            let fileURL = URL(string: directoryAbsoluteString + "/" + subpath) {
             return fileURL
         }
