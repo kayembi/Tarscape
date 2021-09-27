@@ -34,6 +34,29 @@ public class KBTarArchiver {
     
     // MARK: - Public Methods
     
+    // Populated if progress count is requested.
+    private var allFiles: [URL]?
+    private var _progressCount: Int64 = 0
+    
+    /// Returns the total number of files to be archived.
+    ///
+    /// Use in conjunction with `archive(to:progressBody:`) to show progress during archiving.
+    public var progressCount: Int64 {
+        if allFiles != nil {
+            return _progressCount
+        }
+        
+        let e = FileManager.default.enumerator(at: directoryURL, includingPropertiesForKeys: nil)!
+        var allFiles: [URL] = []
+        for case let fileURL as URL in e {
+            allFiles.append(fileURL)
+        }
+        self.allFiles = allFiles
+        self._progressCount = Int64(allFiles.count)
+        
+        return _progressCount
+    }
+    
     /// Determines how much memory can be used for each file while copying files from disk into the Tar archive.
     ///
     /// To avoid consumuing too much memory for large files, files are read from disk for archiving in chunks. A single
@@ -53,8 +76,10 @@ public class KBTarArchiver {
     
     /// Creates a Tar file at `tarURL`.
     /// - Parameter to: The path at which the Tar file should be created.
-    /// - Parameter progressBody: A closure with a `Double` parameter representing the current progress (from 0.0 to 1.0).
-    public func archive(to tarURL: URL, progressBody: ((Double) -> Void)? = nil) throws {
+    /// - Parameter progressBody: A closure with a `(Double, Int64)` tuple parameter representing
+    ///     the current progress,  where the `Double` is a fraction (0.0 - 1.0) and the `Int64` is the number of
+    ///     files processed so far (`progressCount` being the total).
+    public func archive(to tarURL: URL, progressBody: ((Double, Int64) -> Void)? = nil) throws {
         let fm = FileManager.default
         // Check the source file exists.
         guard fm.fileExists(atPath: directoryURL.path) else {
@@ -71,7 +96,6 @@ public class KBTarArchiver {
         try Data().write(to: tarURL)
         fileHandle = try FileHandle(forWritingTo: tarURL)
         
-        let e = fm.enumerator(at: directoryURL, includingPropertiesForKeys: nil)!
         let basepath = directoryURL.standardizedFileURL.path
         var basepathLen = basepath.count
         if basepath.hasSuffix("/") == false { basepathLen += 1}
@@ -90,25 +114,33 @@ public class KBTarArchiver {
         if progressBody != nil {
             // Gather list of all files first so that we can get the count
             // in order to calculate our progress.
-            var allFiles: [URL] = []
-            for case let fileURL as URL in e {
-                allFiles.append(fileURL)
+            // (If the progress count has already been requested, then
+            // allFiles should already have been populated.)
+            if self.allFiles == nil {
+                let e = fm.enumerator(at: directoryURL, includingPropertiesForKeys: nil)!
+                var allFiles: [URL] = []
+                for case let fileURL as URL in e {
+                    allFiles.append(fileURL)
+                }
+                self.allFiles = allFiles
             }
-            let fileCount = Double(allFiles.count)
-            for (i, fileURL) in allFiles.enumerated() {
-                progressBody!(Double(i)/fileCount)
+            
+            let fileCount = Double(allFiles!.count)
+            for (i, fileURL) in allFiles!.enumerated() {
+                progressBody!(Double(i)/fileCount, Int64(i))
                 try encode(fileURL: fileURL)
             }
         } else {
             // If we don't need to show the progress, just do the work as
             // we enumerate through the files.
+            let e = fm.enumerator(at: directoryURL, includingPropertiesForKeys: nil)!
             for case let fileURL as URL in e {
                 try encode(fileURL: fileURL)
             }
         }
         
         // Ensure progress finishes.
-        progressBody?(1.0)
+        progressBody?(1.0, _progressCount)
         
         // Append two empty blocks to to indicate the end of the file
         // and then close our file handle - we're done.

@@ -11,12 +11,36 @@ import Foundation
 public extension FileManager {
     
     @nonobjc
-    func extractTar(at tarURL: URL, to dirURL: URL, options: KBTarUnarchiver.Options = [.restoreFileAttributes], progressBody: ((Double) -> Void)? = nil) throws {
+    func extractTar(at tarURL: URL, to dirURL: URL, options: KBTarUnarchiver.Options = [.restoreFileAttributes], progress: Progress? = nil) throws {
+        let unarchiver = try KBTarUnarchiver(tarURL: tarURL, options: options)
+        
+        var progressBody: ((Double, Int64) -> Void)?
+        
+        if progress != nil {
+            // Asking for the progress count enumerates through files in advance, so only
+            // do this if we actually want to use the progress.
+            progress?.totalUnitCount = unarchiver.progressCount
+            progressBody = {(_, currentFileNum) in
+                progress?.completedUnitCount = currentFileNum
+            }
+        }
+        
         try KBTarUnarchiver(tarURL: tarURL, options: options).extract(to: dirURL, progressBody: progressBody)
     }
     
     @nonobjc
-    func createTar(at tarURL: URL, from dirURL: URL, options: KBTarArchiver.Options = [], progressBody: ((Double) -> Void)? = nil) throws {
+    func createTar(at tarURL: URL, from dirURL: URL, options: KBTarArchiver.Options = [],  progress: Progress? = nil) throws {
+        let archiver = KBTarArchiver(directoryURL: dirURL, options: options)
+        
+        var progressBody: ((Double, Int64) -> Void)?
+        
+        if progress != nil {
+            progress?.totalUnitCount = archiver.progressCount
+            progressBody = {(_, currentFileNum) in
+                progress?.completedUnitCount = currentFileNum
+            }
+        }
+        
         try KBTarArchiver(directoryURL: dirURL, options: options).archive(to: tarURL, progressBody: progressBody)
     }
     
@@ -32,8 +56,8 @@ public extension FileManager {
     ///     permissions be ignored. This can significantly speed up the extraction process.
     /// - Parameter progressBody: A closure with a `Double` parameter representing the current progress (from 0.0 to 1.0).
     @objc(extractTarAtURL:toDirectoryAtURL:restoreAttributes:progressBlock:error:)
-    func extractTar(at tarURL: URL, to dirURL: URL, restoreAttributes: Bool, progressBody: ((Double) -> Void)? = nil) throws {
-        try KBTarUnarchiver(tarURL: tarURL, options: restoreAttributes ? .restoreFileAttributes : []).extract(to: dirURL, progressBody: progressBody)
+    func extractTar(at tarURL: URL, to dirURL: URL, restoreAttributes: Bool,  progress: Progress? = nil) throws {
+        try extractTar(at: tarURL, to: dirURL, options: restoreAttributes ? .restoreFileAttributes : [], progress: progress)
     }
     
     /// Creates a Tar file at `tarURL`.
@@ -43,7 +67,7 @@ public extension FileManager {
     ///     is set to `true`, archiving will check for alias files and store them as symbolic links. This can take longer.
     /// - Parameter progressBody: A closure with a `Double` parameter representing the current progress (from 0.0 to 1.0).
     @objc(createTarAtURL:fromDirectoryAtURL:convertAliasFiles:progressBlock:error:)
-    func createTar(at tarURL: URL, from dirURL: URL, convertAliasFiles: Bool, progressBody: ((Double) -> Void)? = nil) throws {
-        try KBTarArchiver(directoryURL: dirURL, options: convertAliasFiles ? .convertAliasFiles : []).archive(to: tarURL, progressBody: progressBody)
+    func createTar(at tarURL: URL, from dirURL: URL, convertAliasFiles: Bool,  progress: Progress? = nil) throws {
+        try createTar(at: tarURL, from: dirURL, options: convertAliasFiles ? .convertAliasFiles : [], progress: progress)
     }
 }

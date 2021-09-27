@@ -47,8 +47,8 @@ For example, setting `.convertAliasFiles` ensures alias files get stored in the 
 // If the folder contains or might contain aliases, we should tell 
 // the archiver to convert them to symbolic links.
 let tarArchiver = KBTarArchiver(directoryURL: dirURL, options: .convertAliasFiles)
-try tarArchiver.archive(to: tarURL) { progress in
-    // Update progress here (0.0...1.0)
+try tarArchiver.archive(to: tarURL) { (progressFraction, progressCount) in
+    // Update progress here.
 }
 ```
 
@@ -69,9 +69,9 @@ You can also set some options to speed up unarchiving:
 //    Only set this flag if you're sure, though - unarchiving can be slower if
 //    you set this flag but it turns out that a lot of subpaths contain spaces
 //    or special characters.
-let tarUnarchiver = KBTarUnarchiver(tarURL: tarURL, options: [.mostSubpathsCanBeUnescaped])
-try tarUnarchiver.extract(to: dirURL) { progress in
-    // Update progress here (0.0...1.0)
+let tarUnarchiver = try KBTarUnarchiver(tarURL: tarURL, options: [.mostSubpathsCanBeUnescaped])
+try tarUnarchiver.extract(to: dirURL) { (progressFraction, progressCount) in
+    // Update progress here.
 }
 
 ```
@@ -83,7 +83,7 @@ If you don't want to extract the entire Tar file but just find a certain file or
 Example:
 
 ```swift
-let tarUnarchiver = KBTarUnarchiver(tarURL: tarURL)
+let tarUnarchiver = try KBTarUnarchiver(tarURL: tarURL)
 
 // Get a single file:
 let fileEntry = try tarUnarchiver.entry(atSubpath: "path/to/file.txt")
@@ -99,7 +99,7 @@ for childEntry in folderEntry.descendants {
 Note that every time you call `entry(atSubpath:)`, Tarscape has to parse through the entire Tar file until it finds the entry. If you need to look for more than one entry, therefore, you should tell the unarchiver to parse the Tar file first to build up a list of entries:
 
 ```swift
-let tarUnarchiver = KBTarUnarchiver(tarURL: tarURL)
+let tarUnarchiver = try KBTarUnarchiver(tarURL: tarURL)
 
 // Tell the unarchiver to gather a list of entries. By passing in the "lazily" 
 // flag, we tell the unarchiver not to load any data into memory but only the 

@@ -16,6 +16,7 @@ public class KBTarUnarchiver {
     private let tarURL: URL
     private let options: Options
     private var fileHandle: FileHandle!
+    private let size: Int
     
     // MARK: - Options
     
@@ -69,15 +70,33 @@ public class KBTarUnarchiver {
     /// Creates an unarchiver object ready for extracting the Tar file at the passed-in location.
     /// - Parameter tarURL: The path of the Tar file to extract.
     /// - Parameter options: Options for extracting the data. The default value is `[.restoreFileAttributes]`.
-    public init(tarURL: URL, options: Options = [.restoreFileAttributes]) {
+    public init(tarURL: URL, options: Options = [.restoreFileAttributes]) throws {
         self.tarURL = tarURL
         self.options = options
+        
+        // Get the size of the file we want to extract.
+        // This will also be used for the maximum progress.
+        let attributes = try FileManager.default.attributesOfItem(atPath: tarURL.path)
+        guard let size = attributes[.size] as? Int else {
+            throw KBTarError.couldNotGetTarSize
+        }
+        self.size = size
+    }
+    
+    /// Returns the total amount of data that needs extracting.
+    ///
+    /// Use in conjunction with `extract(to:progressBody:` to show progress during extraction.
+    public var progressCount: Int64 {
+        return Int64(size)
     }
     
     /// Extracts the tar at `tarURL` to `dirURL`.
-    /// - Parameter to: The path to which to extract the Tar file. A directory will be created at this path containing the extracted files.
-    /// - Parameter progressBody: A closure with a `Double` parameter representing the current progress (from 0.0 to 1.0).
-    public func extract(to dirURL: URL, progressBody: ((Double) -> Void)? = nil) throws {
+    /// - Parameter to: The path to which to extract the Tar file. A directory will be created at this path containing
+    ///     the extracted files.
+    /// - Parameter progressBody: A closure with a `(Double, Int64)` tuple parameter representing
+    ///     the current progress,  where the `Double` is a fraction (0.0 - 1.0) and the `Int64` is the amount of
+    ///     data processed so far (`progressCount` being the total).
+    public func extract(to dirURL: URL, progressBody: ((Double, Int64) -> Void)? = nil) throws {
         let fm = FileManager.default
         
         // Remove any existing file at the target path.
@@ -362,17 +381,11 @@ public class KBTarUnarchiver {
     // MARK: - Main Enumeration Method
     
     // This is used both by the directory creation method and by the entry finding method.
-    private func openFileHandleAndEnumerateTar(progressBody: ((Double) -> Void)? = nil, entryBlock:(String, UInt64, Int, KBTar.TarType, KBTar.ExtendedHeader?, inout Bool) throws -> Void) throws {
+    private func openFileHandleAndEnumerateTar(progressBody: ((Double, Int64) -> Void)? = nil, entryBlock:(String, UInt64, Int, KBTar.TarType, KBTar.ExtendedHeader?, inout Bool) throws -> Void) throws {
         let fm = FileManager.default
         // Check the Tar file exists.
         guard fm.fileExists(atPath: tarURL.path) else {
             throw KBTarError.tarFileDoesNotExist
-        }
-        
-        // Get the size of the file we want to extract.
-        let attributes = try fm.attributesOfItem(atPath: tarURL.path)
-        guard let size = attributes[.size] as? Int else {
-            throw KBTarError.couldNotGetTarSize
         }
         
         // Create a file handle for reading the Tar file.
@@ -390,7 +403,10 @@ public class KBTarUnarchiver {
             var blockCount = 1 // 1 block for the header (each block = 512 bytes).
             
             // Update the progress.
-            progressBody?(Double(location)/Double(size))
+            // For this we pass both the fraction completed and
+            // the current location (Progress requires us to work
+            // with absolutes rather than fractions.)
+            progressBody?(Double(location)/Double(size), Int64(location))
             
             try autoreleasepool { // Keep memory tidy.
                 let type = try type(at: location)
@@ -463,7 +479,7 @@ public class KBTarUnarchiver {
         }
         
         // Ensure progress finishes.
-        progressBody?(1.0)
+        progressBody?(1.0, progressCount)
         
         // We've finished with the file handle - close it to finish.
         try fileHandle.close()

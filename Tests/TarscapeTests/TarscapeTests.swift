@@ -117,7 +117,7 @@ final class TarscapeTests: XCTestCase {
         let tarURL = tempFolder.appendingPathComponent("archive.tar")
         try fm.createTar(at: tarURL, from: dirURL)
         
-        let unarchiver = KBTarUnarchiver(tarURL: tarURL)
+        let unarchiver = try KBTarUnarchiver(tarURL: tarURL)
         //try unarchiver.loadAllEntries(lazily: true)
         let testFolderEntry = unarchiver["holder_folder/test_folder"]
         XCTAssert(testFolderEntry != nil)
