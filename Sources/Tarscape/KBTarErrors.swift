@@ -56,7 +56,7 @@ fileprivate class KBTarLocalize {
         return NSLocalizedString(string, tableName: localizedStringsTable, bundle: frameworkBundle, value: string, comment: comment)
     }
     
-    private static var localizedStringsTable = "Localizable"
+    private static let localizedStringsTable = "Localizable"
     
     private static var frameworkBundle: Bundle {
         return Bundle(for: Self.self)
