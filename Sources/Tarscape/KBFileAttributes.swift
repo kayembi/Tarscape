@@ -45,7 +45,15 @@ public struct KBFileAttributes {
         self.fileType = isAlias ? .alias : FileType(mode: fileStat.st_mode)
         
         // File size.
-        self.fileSize = Int(fileStat.st_size)
+		// Some directories return a size using stat (return nil with FileManager),
+		// since we never write any data for directories adding here the size
+		// will produce a bad header that may cause issues when parsed
+		if self.fileType == .directory {
+			self.fileSize = 0
+		}
+		else {
+			self.fileSize = Int(fileStat.st_size)
+		}
         
         // Modification date.
         let modTimeSpec = fileStat.st_mtimespec
