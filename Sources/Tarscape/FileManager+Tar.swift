@@ -29,7 +29,7 @@ public extension FileManager {
     }
     
     @nonobjc
-    func createTar(at tarURL: URL, from dirURL: URL, options: KBTarArchiver.Options = [],  progress: Progress? = nil) throws {
+    func createTar(at tarURL: URL, from dirURL: URL, filter: KBURLFilter? = nil, options: KBTarArchiver.Options = [],  progress: Progress? = nil) throws {
         let archiver = KBTarArchiver(directoryURL: dirURL, options: options)
         
         var progressBody: ((Double, Int64) -> Void)?
@@ -41,7 +41,7 @@ public extension FileManager {
             }
         }
         
-        try KBTarArchiver(directoryURL: dirURL, options: options).archive(to: tarURL, progressBody: progressBody)
+        try KBTarArchiver(directoryURL: dirURL, filter: filter, options: options).archive(to: tarURL, progressBody: progressBody)
     }
     
     // MARK: - Objective-C Compatible Methods

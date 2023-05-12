@@ -11,9 +11,12 @@
 
 import Foundation
 
+public typealias KBURLFilter = (_ url:URL) -> Bool
+
 public class KBTarArchiver {
     
     private let directoryURL: URL
+    private let filter: KBURLFilter?
     private let options: Options
     private var fileHandle: FileHandle!
     
@@ -49,7 +52,9 @@ public class KBTarArchiver {
         let e = FileManager.default.enumerator(at: directoryURL, includingPropertiesForKeys: nil)!
         var allFiles: [URL] = []
         for case let fileURL as URL in e {
-            allFiles.append(fileURL)
+            if self.filter?(fileURL) ?? true {
+                allFiles.append(fileURL)
+            }
         }
         self.allFiles = allFiles
         self._progressCount = Int64(allFiles.count)
@@ -68,9 +73,11 @@ public class KBTarArchiver {
     
     /// Creates a new archiver object ready to generate a Tar file from the passed-in directory contents.
     /// - Parameter directoryURL: The path to the directory for archiving.
+    /// - Parameter filter: Allows filter out specific files or directories. The default value is nil.
     /// - Parameter options: Options for creating the archive. The default value is `[]`.
-    public init(directoryURL: URL, options: Options = []) {
+    public init(directoryURL: URL, filter: KBURLFilter? = nil, options: Options = []) {
         self.directoryURL = directoryURL
+        self.filter = filter
         self.options = options
     }
     
@@ -120,7 +127,9 @@ public class KBTarArchiver {
                 let e = fm.enumerator(at: directoryURL, includingPropertiesForKeys: nil)!
                 var allFiles: [URL] = []
                 for case let fileURL as URL in e {
-                    allFiles.append(fileURL)
+                    if self.filter?(fileURL) ?? true {
+                        allFiles.append(fileURL)
+                    }
                 }
                 self.allFiles = allFiles
             }
@@ -135,7 +144,9 @@ public class KBTarArchiver {
             // we enumerate through the files.
             let e = fm.enumerator(at: directoryURL, includingPropertiesForKeys: nil)!
             for case let fileURL as URL in e {
-                try encode(fileURL: fileURL)
+                if self.filter?(fileURL) ?? true {
+                    try encode(fileURL: fileURL)
+                }
             }
         }
         
