@@ -164,6 +164,10 @@ public class KBTarArchiver {
     
     private func encodeBinaryData(for fileURL: URL, subpath: String) throws {
         
+        guard FileManager.default.fileExists(atPath: fileURL.relativePath) else {
+            return
+        }
+        
         let fileAttributes = KBFileAttributes(fileURL: fileURL, supportAliasFiles: options.contains(.convertAliasFiles))
         
         // Get the Tar type (directory, symbolic link or regular file).
